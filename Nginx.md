@@ -57,38 +57,38 @@ docker exec -it mi_nginx bash
 
 A partir del análisis realizado, se identifican los siguientes riesgos:
 
-### 🌐 Exposición pública
+### Exposición pública
 El servicio es accesible desde cualquier red sin restricciones de IP ni firewall.
 
-### 👑 Ejecución como root
+### Ejecución como root
 Aumenta considerablemente el impacto de una posible vulnerabilidad o compromiso del contenedor.
 
-### 🔍 Configuración por defecto
+### Configuración por defecto
 El servidor expone su versión y detalles del sistema, facilitando ataques dirigidos.
 
-### 🔓 Sin cifrado (HTTP)
+### Sin cifrado (HTTP)
 La información viaja en texto plano, susceptible de interceptación.
 
-### 🚪 Sin control de acceso
+### Sin control de acceso
 Cualquier usuario puede acceder al servicio sin autenticación ni restricción alguna.
 
-### 📋 Filtración en logs
+### Filtración en logs
 Los logs exponen detalles internos del sistema y errores que podrían aprovecharse.
 
 ---
 
 ## 5. Propuesta de Bastionado
 
-### 🔒 Red y Puertos
+### Red y Puertos
 
 - Limitar la exposición del servicio a `127.0.0.1` o a IPs concretas.
 - Aplicar reglas de **firewall** para restringir el acceso externo.
 
-### 👤 Usuario Seguro
+### Usuario Seguro
 
 - Ejecutar el contenedor con un **usuario no privilegiado** en lugar de `root`.
 
-### ⚙️ Configuración de Nginx
+### Configuración de Nginx
 
 - Ocultar la versión del servidor:
   ```nginx
@@ -97,16 +97,16 @@ Los logs exponen detalles internos del sistema y errores que podrían aprovechar
 - Limitar los métodos HTTP permitidos.
 - Gestionar correctamente los errores para evitar filtración de información sensible.
 
-### 📊 Logging
+### Logging
 
 - Centralizar logs y evitar mostrar información sensible.
 - Implementar **monitorización de accesos** para detectar comportamientos anómalos.
 
-### 🔐 HTTPS / TLS
+### HTTPS / TLS
 
 - Implementar cifrado mediante **TLS**, utilizando por ejemplo un reverse proxy (Traefik, Caddy, etc.).
 
-### 🖥️ Recursos y Sistema
+### Recursos y Sistema
 
 - Definir **límites de CPU y memoria** para evitar DoS.
 - Usar el sistema de archivos en **modo solo lectura**.
@@ -135,7 +135,7 @@ services:
 
 Esto permite controlar la exposición del servicio, su comportamiento ante fallos y sus recursos disponibles.
 
-### 📜 Script de Comprobación
+### Script de Comprobación
 
 Para verificar de forma automatizada el estado del puerto:
 
@@ -145,9 +145,9 @@ Para verificar de forma automatizada el estado del puerto:
 PORT=8080
 
 if netstat -tuln | grep -q $PORT; then
-  echo "⚠️  Puerto $PORT abierto — revisar exposición"
+  echo "Puerto $PORT abierto — revisar exposición"
 else
-  echo "✅ Puerto $PORT cerrado"
+  echo "Puerto $PORT cerrado"
 fi
 ```
 
@@ -165,8 +165,8 @@ En un contexto real, sería imprescindible aplicar medidas de **bastionado y aut
 - Limitar los accesos no autorizados.
 - Proteger la confidencialidad e integridad del servicio.
 
-> 💡 Este ejercicio pone de manifiesto la importancia de **no confiar en configuraciones por defecto** y de aplicar buenas prácticas de seguridad desde el inicio del despliegue, siguiendo el principio de *secure by design*.
+> Este ejercicio pone de manifiesto la importancia de **no confiar en configuraciones por defecto** y de aplicar buenas prácticas de seguridad desde el inicio del despliegue, siguiendo el principio de *secure by design*.
 
 ---
 
-*Práctica realizada con Docker + Nginx · Seguridad en Sistemas y Redes*
+*Práctica realizada con Docker + Nginx · Bastionado en Sistemas y Redes Profesora: Arianne Perleche*
