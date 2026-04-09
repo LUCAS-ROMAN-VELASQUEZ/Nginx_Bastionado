@@ -1,75 +1,126 @@
-Despliegue y bastionado de un servicio web con Docker (Nginx)
-1. Despliegue del servicio
+# 🐳 Despliegue y Bastionado de un Servicio Web con Docker (Nginx)
 
-Para realizar la práctica, se ha desplegado un contenedor web utilizando la imagen oficial de Nginx mediante Docker con el siguiente comando:
+---
 
+## 1. Despliegue del Servicio
+
+Para realizar la práctica, se desplegó un contenedor web utilizando la imagen oficial de **Nginx** mediante Docker:
+
+```bash
 docker run -d -p 8080:80 --name mi_nginx nginx
+```
 
-Esto levanta un servidor web en segundo plano, exponiendo el puerto 80 del contenedor en el puerto 8080 de la máquina host. Posteriormente, se ha comprobado el acceso al servicio a través del navegador mediante http://localhost:8080, verificando que el servidor responde correctamente.
+Este comando levanta un servidor web en segundo plano, exponiendo el **puerto 80** del contenedor en el **puerto 8080** del host. El acceso se verificó a través del navegador en:
 
-2. Exposición del servicio
+```
+http://localhost:8080
+```
 
-El servicio está expuesto en el puerto 8080 del host y, según la configuración observada, se encuentra asociado a la dirección 0.0.0.0, lo que implica que es accesible desde cualquier interfaz de red.
+---
 
-Esto supone que cualquier equipo con conectividad hacia la máquina podría acceder al servicio, lo cual en un entorno real representa un riesgo si no se aplican controles adicionales. Además, el servicio funciona sobre HTTP, por lo que toda la comunicación se realiza en texto plano.
+## 2. Exposición del Servicio
 
-3. Inspección del contenedor
+El servicio queda expuesto en el puerto `8080` del host, asociado a la dirección `0.0.0.0`, lo que implica que es **accesible desde cualquier interfaz de red**.
 
-Se ha utilizado el comando docker inspect para analizar la configuración interna del contenedor, así como docker logs y acceso interactivo con docker exec.
+> ⚠️ **Riesgo:** Cualquier equipo con conectividad hacia la máquina podría acceder al servicio sin ninguna restricción. Además, al funcionar sobre **HTTP**, toda la comunicación viaja en **texto plano**.
 
-Entre los aspectos más relevantes detectados:
+---
 
-El contenedor se ejecuta como usuario root, lo que incrementa el impacto en caso de compromiso.
-El puerto 8080 está expuesto en todas las interfaces (0.0.0.0).
-No existe política de reinicio configurada.
-No se han definido límites de CPU ni memoria.
-El sistema de archivos no es de solo lectura.
-Los logs muestran información detallada como la versión de Nginx y del sistema operativo.
-Se ejecutan scripts automáticos al arranque del contenedor.
-Se ha comprobado acceso directo al contenedor con privilegios elevados.
+## 3. Inspección del Contenedor
 
-Todo esto indica que la configuración es la estándar y no está endurecida para un entorno de producción.
+Se utilizaron los siguientes comandos para analizar la configuración interna:
 
-4. Riesgos de seguridad
+```bash
+docker inspect mi_nginx
+docker logs mi_nginx
+docker exec -it mi_nginx bash
+```
 
-A partir del análisis realizado, se identifican los siguientes riesgos principales:
+### Hallazgos principales
 
-Exposición pública del servicio: accesible desde cualquier red sin restricciones.
-Ejecución como root: aumenta el impacto de una posible vulnerabilidad.
-Configuración por defecto: el servidor muestra información como la versión, útil para ataques dirigidos.
-Falta de cifrado (HTTPS): la información viaja en texto plano.
-Ausencia de control de acceso: cualquier usuario puede acceder al servicio.
-Filtración de información en logs: se exponen detalles del sistema y errores internos.
+| Aspecto | Estado |
+|---|---|
+| Usuario de ejecución | `root` ⚠️ |
+| Puerto expuesto | `0.0.0.0:8080` (todas las interfaces) ⚠️ |
+| Política de reinicio | No configurada ⚠️ |
+| Límites de CPU/Memoria | No definidos ⚠️ |
+| Sistema de archivos | Lectura y escritura (no read-only) ⚠️ |
+| Información en logs | Versión de Nginx y SO expuestas ⚠️ |
+| Scripts de arranque | Se ejecutan automáticamente ⚠️ |
+| Acceso al contenedor | Con privilegios elevados ⚠️ |
 
-Esto supone un riesgo porque un atacante podría obtener información del sistema, explotar vulnerabilidades conocidas o acceder sin ningún tipo de restricción.
+> La configuración es completamente estándar y **no está endurecida** para un entorno de producción.
 
-5. Propuesta de bastionado
+---
 
-Para mejorar la seguridad del servicio, se plantean las siguientes medidas:
+## 4. Riesgos de Seguridad
 
-🔒 Red y puertos
-Limitar la exposición del servicio a localhost (127.0.0.1) o a IPs concretas.
-Aplicar reglas de firewall para restringir el acceso.
-👤 Usuario seguro
-Ejecutar el contenedor con un usuario no privilegiado en lugar de root.
-⚙️ Configuración de Nginx
-Ocultar la versión del servidor (server_tokens off).
-Limitar métodos HTTP permitidos.
-Gestionar correctamente los errores para evitar filtración de información.
-📊 Logging
-Centralizar logs y evitar mostrar información sensible.
-Implementar monitorización de accesos.
-🔐 HTTPS
-Implementar cifrado mediante TLS, por ejemplo usando un reverse proxy.
-⚙️ Recursos y sistema
-Definir límites de CPU y memoria.
-Usar sistema de archivos en modo solo lectura.
-Configurar política de reinicio automática.
-6. Automatización
+A partir del análisis realizado, se identifican los siguientes riesgos:
 
-Para facilitar un despliegue más seguro y repetible, se propone el uso de automatización:
+### 🌐 Exposición pública
+El servicio es accesible desde cualquier red sin restricciones de IP ni firewall.
 
-Docker Compose
+### 👑 Ejecución como root
+Aumenta considerablemente el impacto de una posible vulnerabilidad o compromiso del contenedor.
+
+### 🔍 Configuración por defecto
+El servidor expone su versión y detalles del sistema, facilitando ataques dirigidos.
+
+### 🔓 Sin cifrado (HTTP)
+La información viaja en texto plano, susceptible de interceptación.
+
+### 🚪 Sin control de acceso
+Cualquier usuario puede acceder al servicio sin autenticación ni restricción alguna.
+
+### 📋 Filtración en logs
+Los logs exponen detalles internos del sistema y errores que podrían aprovecharse.
+
+---
+
+## 5. Propuesta de Bastionado
+
+### 🔒 Red y Puertos
+
+- Limitar la exposición del servicio a `127.0.0.1` o a IPs concretas.
+- Aplicar reglas de **firewall** para restringir el acceso externo.
+
+### 👤 Usuario Seguro
+
+- Ejecutar el contenedor con un **usuario no privilegiado** en lugar de `root`.
+
+### ⚙️ Configuración de Nginx
+
+- Ocultar la versión del servidor:
+  ```nginx
+  server_tokens off;
+  ```
+- Limitar los métodos HTTP permitidos.
+- Gestionar correctamente los errores para evitar filtración de información sensible.
+
+### 📊 Logging
+
+- Centralizar logs y evitar mostrar información sensible.
+- Implementar **monitorización de accesos** para detectar comportamientos anómalos.
+
+### 🔐 HTTPS / TLS
+
+- Implementar cifrado mediante **TLS**, utilizando por ejemplo un reverse proxy (Traefik, Caddy, etc.).
+
+### 🖥️ Recursos y Sistema
+
+- Definir **límites de CPU y memoria** para evitar DoS.
+- Usar el sistema de archivos en **modo solo lectura**.
+- Configurar una política de **reinicio automático**.
+
+---
+
+## 6. Automatización
+
+### 🐙 Docker Compose
+
+Para un despliegue más seguro y repetible:
+
+```yaml
 version: '3'
 services:
   web:
@@ -77,24 +128,45 @@ services:
     ports:
       - "127.0.0.1:8080:80"
     restart: always
+    read_only: true
+    mem_limit: 256m
+    cpus: "0.5"
+```
 
-Esto permite controlar mejor la exposición del servicio y su comportamiento.
+Esto permite controlar la exposición del servicio, su comportamiento ante fallos y sus recursos disponibles.
 
-Script de comprobación
+### 📜 Script de Comprobación
+
+Para verificar de forma automatizada el estado del puerto:
+
+```bash
 #!/bin/bash
 
 PORT=8080
 
-if netstat -tuln | grep $PORT; then
-  echo "Puerto $PORT abierto ⚠️"
+if netstat -tuln | grep -q $PORT; then
+  echo "⚠️  Puerto $PORT abierto — revisar exposición"
 else
-  echo "Puerto cerrado ✅"
+  echo "✅ Puerto $PORT cerrado"
 fi
+```
 
-Este tipo de scripts permite verificar de forma automatizada el estado del servicio y detectar posibles exposiciones.
+Este tipo de scripts permite detectar posibles exposiciones de forma rápida y automatizada.
 
-7. Conclusión
+---
 
-Aunque el despliegue inicial del contenedor es funcional, se ha comprobado que presenta múltiples debilidades de seguridad debido a su configuración por defecto.
+## 7. Conclusión
 
-En un entorno real, sería necesario aplicar medidas de bastionado y automatización para reducir la superficie de ataque, limitar accesos y asegurar el servicio. Este ejercicio permite entender la importancia de no confiar en configuraciones por defecto y de aplicar buenas prácticas desde el inicio del despliegue.
+Aunque el despliegue inicial del contenedor es funcional, la configuración por defecto presenta **múltiples debilidades de seguridad** que lo hacen inadecuado para un entorno de producción.
+
+En un contexto real, sería imprescindible aplicar medidas de **bastionado y automatización** para:
+
+- Reducir la superficie de ataque.
+- Limitar los accesos no autorizados.
+- Proteger la confidencialidad e integridad del servicio.
+
+> 💡 Este ejercicio pone de manifiesto la importancia de **no confiar en configuraciones por defecto** y de aplicar buenas prácticas de seguridad desde el inicio del despliegue, siguiendo el principio de *secure by design*.
+
+---
+
+*Práctica realizada con Docker + Nginx · Seguridad en Sistemas y Redes*
